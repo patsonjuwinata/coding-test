@@ -1,33 +1,50 @@
-from fastapi import FastAPI, Request
+
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+from fastapi import FastAPI
+from pydantic import BaseModel
 import json
+import random
 
 app = FastAPI()
 
-# Load dummy data
-with open("dummyData.json", "r") as f:
-    DUMMY_DATA = json.load(f)
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/api/data")
-def get_data():
-    """
-    Returns dummy data (e.g., list of users).
-    """
-    return DUMMY_DATA
+# Load data from dummyData.json file
+def load_sales_data():
+    with open('dummyData.json', 'r') as f:
+        return json.load(f)
+
+# Dummy AI feature for questions
+class AIRequest(BaseModel):
+    question: str
 
 @app.post("/api/ai")
-async def ai_endpoint(request: Request):
-    """
-    Accepts a user question and returns a placeholder AI response.
-    (Optionally integrate a real AI model or external service here.)
-    """
-    body = await request.json()
-    user_question = body.get("question", "")
+async def get_ai_response(request: AIRequest):
+    # A simple mock AI response
+    questions = {
+        "What is the best deal?": "The best deal is with Acme Corp for $120,000.",
+        "Who is Alice?": "Alice is a Senior Sales Executive in North America.",
+        "What are the deals for Beta Ltd?": "Beta Ltd has a deal worth $50,000, currently in progress."
+    }
     
-    # Placeholder logic: echo the question or generate a simple response
-    # Replace with real AI logic as desired (e.g., call to an LLM).
-    return {"answer": f"This is a placeholder answer to your question: {user_question}"}
+    # Check if the question is in our predefined list
+    answer = questions.get(request.question, "I'm not sure about that question.")
+    
+    # Randomized response to simulate AI-like behavior
+    if random.choice([True, False]):
+        answer = "This is an AI-generated response. " + answer
+    
+    return {"answer": answer}
 
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+@app.get("/api/sales-reps")
+async def get_sales_reps():
+    # Load data from the JSON file
+    sales_data = load_sales_data()
+    return sales_data
